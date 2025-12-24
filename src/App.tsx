@@ -5,6 +5,7 @@ import { Toast } from './components/Toast';
 import { Point } from './types';
 import { generateMask, applyBackgroundColor, downloadCanvasAsPNG } from './lib/mask';
 import { isTIFF, decodeTIFF } from './lib/tiff';
+import { Language, translations } from './translations';
 import './App.css';
 
 interface ToastState {
@@ -21,10 +22,41 @@ function App() {
   const [resetTrigger, setResetTrigger] = useState(0);
   const [resultCanvas, setResultCanvas] = useState<HTMLCanvasElement | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
+  const [language, setLanguage] = useState<Language>('en');
+
+  const t = translations[language];
 
   const showToast = (message: string, type: ToastState['type'] = 'info') => {
     setToast({ message, type });
   };
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = e.clientX - 16; // Account for app padding
+      setLeftPanelWidth(Math.max(300, Math.min(600, newWidth)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   const handleUploadImage = useCallback((file: File) => {
     // Check file size (warn if > 10MB)
@@ -107,22 +139,22 @@ function App() {
       const canvas = applyBackgroundColor(image, mask, backgroundColor);
       setResultCanvas(canvas);
 
-      showToast('Background color applied! Click Download to save.', 'success');
+      showToast(t.colorAppliedSuccess, 'success');
     } catch (error) {
       console.error('Error applying color:', error);
-      showToast('Failed to apply background color', 'error');
+      showToast(t.applyColorError, 'error');
     }
-  }, [image, closedPath, backgroundColor]);
+  }, [image, closedPath, backgroundColor, t]);
 
   const handleDownload = useCallback(() => {
     if (!resultCanvas) {
-      showToast('Please apply a background color first', 'warning');
+      showToast(t.applyColorError, 'warning');
       return;
     }
 
     downloadCanvasAsPNG(resultCanvas);
-    showToast('Image downloaded successfully!', 'success');
-  }, [resultCanvas]);
+    showToast(t.downloadSuccess, 'success');
+  }, [resultCanvas, t]);
 
   // Cleanup on unmount
   React.useEffect(() => {
@@ -135,52 +167,53 @@ function App() {
 
   return (
     <div className="app">
-      <Toolbar
-        hasImage={!!image}
-        hasClosedPath={!!closedPath}
-        edgeStrength={edgeStrength}
-        backgroundColor={backgroundColor}
-        onUploadImage={handleUploadImage}
-        onEdgeStrengthChange={setEdgeStrength}
-        onBackgroundColorChange={setBackgroundColor}
-        onUndo={handleUndo}
-        onReset={handleReset}
-        onApplyColor={handleApplyColor}
-        onDownload={handleDownload}
-      />
-
-      <div className="editor-container">
-        <Editor
-          image={image}
-          edgeStrength={edgeStrength}
-          onPathClosed={handlePathClosed}
-          onReset={handleReset}
-          resetTrigger={resetTrigger}
-        />
-      </div>
-
-      {resultCanvas && (
-        <div className="result-overlay">
-          <div className="result-modal">
-            <h2>Preview Result</h2>
-            <div className="result-image-container">
-              <img
-                src={resultCanvas.toDataURL()}
-                alt="Result"
-                style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }}
+      <div className="app-container">
+        {image && (
+          <>
+            <div className="left-panel left-panel-animated" style={{ width: `${leftPanelWidth}px` }}>
+              <Toolbar
+                hasImage={!!image}
+                hasClosedPath={!!closedPath}
+                hasResult={!!resultCanvas}
+                edgeStrength={edgeStrength}
+                backgroundColor={backgroundColor}
+                onUploadImage={handleUploadImage}
+                onEdgeStrengthChange={setEdgeStrength}
+                onBackgroundColorChange={setBackgroundColor}
+                onUndo={handleUndo}
+                onReset={handleReset}
+                onApplyColor={handleApplyColor}
+                onDownload={handleDownload}
+                translations={t}
+                language={language}
+                onLanguageChange={setLanguage}
               />
             </div>
-            <div className="result-actions">
-              <button className="btn btn-primary" onClick={handleDownload}>
-                ⬇ Download PNG
-              </button>
-              <button className="btn" onClick={() => setResultCanvas(null)}>
-                Close Preview
-              </button>
+
+            <div
+              className="resize-handle"
+              onMouseDown={handleResizeStart}
+            >
+              <div className="resize-handle-bar" />
             </div>
-          </div>
+          </>
+        )}
+
+        <div className="right-panel" style={{ width: image ? undefined : '100%' }}>
+          <Editor
+            image={image}
+            edgeStrength={edgeStrength}
+            onPathClosed={handlePathClosed}
+            onReset={handleReset}
+            resetTrigger={resetTrigger}
+            onUploadImage={handleUploadImage}
+            resultCanvas={resultCanvas}
+            translations={t}
+            language={language}
+            onLanguageChange={setLanguage}
+          />
         </div>
-      )}
+      </div>
 
       {toast && (
         <Toast

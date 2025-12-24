@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Stage, Layer, Image as KonvaImage, Line, Circle } from 'react-konva';
 import { Point, Anchor } from '../types';
+import { Translations, Language } from '../translations';
 import {
   loadImageData,
   computeSobelGradients,
@@ -15,6 +16,11 @@ interface EditorProps {
   onPathClosed: (path: Point[]) => void;
   onReset: () => void;
   resetTrigger: number;
+  onUploadImage: (file: File) => void;
+  resultCanvas: HTMLCanvasElement | null;
+  translations: Translations;
+  language: Language;
+  onLanguageChange: (lang: Language) => void;
 }
 
 export const Editor: React.FC<EditorProps> = ({
@@ -23,6 +29,11 @@ export const Editor: React.FC<EditorProps> = ({
   onPathClosed,
   onReset,
   resetTrigger,
+  onUploadImage,
+  resultCanvas,
+  translations: t,
+  language,
+  onLanguageChange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
@@ -39,9 +50,12 @@ export const Editor: React.FC<EditorProps> = ({
   const [previewPath, setPreviewPath] = useState<Point[]>([]);
   const [isPathClosed, setIsPathClosed] = useState(false);
   const [isNearStart, setIsNearStart] = useState(false);
+  const [resultImage, setResultImage] = useState<HTMLImageElement | null>(null);
   
   const anchorIdCounter = useRef(0);
   const lastMouseMoveTime = useRef(0);
+  const isPanning = useRef(false);
+  const lastPanPosition = useRef({ x: 0, y: 0 });
 
   // Handle window resize
   useEffect(() => {
@@ -54,8 +68,19 @@ export const Editor: React.FC<EditorProps> = ({
     
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+    
+    // Also update dimensions when image loads (after panel animation)
+    const timeoutId = setTimeout(updateDimensions, 100);
+    const timeoutId2 = setTimeout(updateDimensions, 500);
+    const timeoutId3 = setTimeout(updateDimensions, 900);
+    
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
+    };
+  }, [image]);
 
   // Reset on resetTrigger change
   useEffect(() => {
@@ -88,8 +113,12 @@ export const Editor: React.FC<EditorProps> = ({
     const gradients = computeSobelGradients(imgData);
     const costs = gradientToCostMap(gradients, edgeStrength);
     setCostMap(costs);
+  }, [image, edgeStrength]);
+
+  // Center and fit image when dimensions or image changes
+  useEffect(() => {
+    if (!image) return;
     
-    // Center and fit image
     const scaleX = (dimensions.width * 0.9) / image.width;
     const scaleY = (dimensions.height * 0.9) / image.height;
     const newScale = Math.min(scaleX, scaleY, 1);
@@ -109,6 +138,18 @@ export const Editor: React.FC<EditorProps> = ({
     const costs = gradientToCostMap(gradients, edgeStrength);
     setCostMap(costs);
   }, [edgeStrength, imageData]);
+
+  // Convert result canvas to image
+  useEffect(() => {
+    if (!resultCanvas) {
+      setResultImage(null);
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => setResultImage(img);
+    img.src = resultCanvas.toDataURL();
+  }, [resultCanvas]);
 
   // Convert stage coordinates to image coordinates
   const stageToImage = useCallback((point: Point): Point => {
@@ -286,7 +327,21 @@ export const Editor: React.FC<EditorProps> = ({
     
     const stage = stageRef.current;
     if (!stage) return;
+
+    // Check if it's a two-finger pan gesture (trackpad)
+    if (e.evt.ctrlKey || Math.abs(e.evt.deltaX) > Math.abs(e.evt.deltaY)) {
+      // Two-finger pan
+      const deltaX = e.evt.deltaX;
+      const deltaY = e.evt.deltaY;
+      
+      setPosition(prev => ({
+        x: prev.x - deltaX,
+        y: prev.y - deltaY,
+      }));
+      return;
+    }
     
+    // Zoom
     const oldScale = scale;
     const pointer = stage.getPointerPosition();
     
@@ -316,6 +371,48 @@ export const Editor: React.FC<EditorProps> = ({
     return [sp.x, sp.y];
   });
 
+  // Handle touch events for pan
+  const handleTouchStart = useCallback((e: any) => {
+    const touches = e.evt.touches;
+    if (touches.length === 2) {
+      isPanning.current = true;
+      const touch1 = touches[0];
+      const touch2 = touches[1];
+      lastPanPosition.current = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2,
+      };
+      e.evt.preventDefault();
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: any) => {
+    const touches = e.evt.touches;
+    if (touches.length === 2 && isPanning.current) {
+      const touch1 = touches[0];
+      const touch2 = touches[1];
+      const currentCenter = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2,
+      };
+      
+      const deltaX = currentCenter.x - lastPanPosition.current.x;
+      const deltaY = currentCenter.y - lastPanPosition.current.y;
+      
+      setPosition(prev => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY,
+      }));
+      
+      lastPanPosition.current = currentCenter;
+      e.evt.preventDefault();
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    isPanning.current = false;
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -337,11 +434,14 @@ export const Editor: React.FC<EditorProps> = ({
           onMouseMove={handleMouseMove}
           onClick={handleClick}
           onWheel={handleWheel}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           draggable={false}
         >
           <Layer>
             <KonvaImage
-              image={image}
+              image={resultImage || image}
               x={position.x}
               y={position.y}
               scaleX={scale}
@@ -349,7 +449,7 @@ export const Editor: React.FC<EditorProps> = ({
             />
             
             {/* Committed + Preview Path */}
-            {pathPointsFlat.length > 2 && (
+            {!resultImage && pathPointsFlat.length > 2 && (
               <Line
                 points={pathPointsFlat}
                 stroke={isNearStart ? '#00ff00' : '#00bfff'}
@@ -360,7 +460,7 @@ export const Editor: React.FC<EditorProps> = ({
             )}
             
             {/* Anchors */}
-            {anchors.map((anchor, idx) => {
+            {!resultImage && anchors.map((anchor, idx) => {
               const stagePoint = imageToStage(anchor.point);
               const isFirst = idx === 0;
               return (
@@ -381,14 +481,80 @@ export const Editor: React.FC<EditorProps> = ({
         <div
           style={{
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
-            color: '#9ca3af',
-            fontSize: '18px',
+            gap: '32px',
           }}
         >
-          Upload an image to start
+          <div style={{
+            position: 'absolute',
+            top: '32px',
+            right: '32px',
+          }}>
+            <select 
+              value={language} 
+              onChange={(e) => onLanguageChange(e.target.value as Language)}
+              className="language-select-main"
+            >
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="zh">中文</option>
+            </select>
+          </div>
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '24px',
+          }}>
+            <h1 style={{
+              fontSize: '56px',
+              fontWeight: '700',
+              margin: '0 0 12px 0',
+              background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '-1px',
+            }}>
+              {t.appTitle}
+            </h1>
+            <p style={{
+              fontSize: '18px',
+              color: 'rgba(0, 0, 0, 0.5)',
+              margin: 0,
+              fontWeight: '400',
+              letterSpacing: '0.5px',
+            }}>
+              {t.appSubtitle}
+            </p>
+          </div>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/tiff,image/tif"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUploadImage(file);
+            }}
+            style={{ display: 'none' }}
+            id="canvas-file-input"
+          />
+          <label
+            htmlFor="canvas-file-input"
+            className="canvas-upload-button"
+          >
+            {t.uploadImage}
+          </label>
+          <p style={{
+            color: 'rgba(0, 0, 0, 0.35)',
+            fontSize: '15px',
+            textAlign: 'center',
+            maxWidth: '400px',
+            lineHeight: '1.6',
+          }}>
+            {t.uploadPlaceholder}<br />
+            <span style={{ fontSize: '13px', opacity: 0.8 }}>{t.supportedFormats}</span>
+          </p>
         </div>
       )}
     </div>

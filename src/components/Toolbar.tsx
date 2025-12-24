@@ -1,8 +1,10 @@
 import React from 'react';
+import { Translations, Language } from '../translations';
 
 interface ToolbarProps {
   hasImage: boolean;
   hasClosedPath: boolean;
+  hasResult: boolean;
   edgeStrength: number;
   backgroundColor: string;
   onUploadImage: (file: File) => void;
@@ -12,11 +14,15 @@ interface ToolbarProps {
   onReset: () => void;
   onApplyColor: () => void;
   onDownload: () => void;
+  translations: Translations;
+  language: Language;
+  onLanguageChange: (lang: Language) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   hasImage,
   hasClosedPath,
+  hasResult,
   edgeStrength,
   backgroundColor,
   onUploadImage,
@@ -26,6 +32,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onReset,
   onApplyColor,
   onDownload,
+  translations: t,
+  language,
+  onLanguageChange,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -34,7 +43,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     if (file && file.type.match(/^image\/(png|jpeg|jpg|tiff|tif)$/)) {
       onUploadImage(file);
     } else {
-      alert('Please upload a PNG, JPG, or TIF image');
+      alert(t.invalidFileType);
     }
   };
 
@@ -44,9 +53,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <div className="toolbar">
-      <div className="toolbar-section">
-        <h1 className="app-title">ChromaCut</h1>
-        <p className="app-subtitle">Magnetic Lasso Editor</p>
+      <div className="toolbar-section toolbar-header">
+        <div className="title-group">
+          <h1 className="app-title">{t.appTitle}</h1>
+          <p className="app-subtitle">{t.appSubtitle}</p>
+        </div>
+        <select 
+          value={language} 
+          onChange={(e) => onLanguageChange(e.target.value as Language)}
+          className="language-select-compact"
+        >
+          <option value="en">EN</option>
+          <option value="fr">FR</option>
+          <option value="zh">中文</option>
+        </select>
       </div>
 
       <div className="toolbar-section-card">
@@ -59,7 +79,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         />
         
         <button className="btn btn-primary" onClick={handleUploadClick}>
-          📁 Upload Image
+          {t.uploadImage}
         </button>
 
         {hasImage && (
@@ -69,34 +89,36 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <button
               className="btn"
               onClick={onUndo}
-              title="Undo last anchor (Ctrl/Cmd+Z)"
+              title={t.undoTitle}
             >
-              ↶ Undo
+              {t.undo}
             </button>
             
             <button
               className="btn"
               onClick={onReset}
-              title="Reset selection (Esc)"
+              title={t.resetTitle}
             >
-              ✕ Reset
+              {t.reset}
             </button>
 
             <div className="divider" />
 
             <div className="control-group">
-              <label htmlFor="edge-strength">Edge Strength:</label>
-              <input
-                id="edge-strength"
-                type="range"
-                min="0.5"
-                max="3"
-                step="0.1"
-                value={edgeStrength}
-                onChange={(e) => onEdgeStrengthChange(parseFloat(e.target.value))}
-                className="slider"
-              />
-              <span className="value-label">{edgeStrength.toFixed(1)}</span>
+              <label htmlFor="edge-strength">{t.edgeStrength}</label>
+              <div className="control-row">
+                <input
+                  id="edge-strength"
+                  type="range"
+                  min="0.5"
+                  max="3"
+                  step="0.1"
+                  value={edgeStrength}
+                  onChange={(e) => onEdgeStrengthChange(parseFloat(e.target.value))}
+                  className="slider"
+                />
+                <span className="value-label">{edgeStrength.toFixed(1)}</span>
+              </div>
             </div>
 
             {hasClosedPath && (
@@ -104,7 +126,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 <div className="divider" />
                 
                 <div className="control-group">
-                  <label htmlFor="bg-color">Background Color:</label>
+                  <label htmlFor="bg-color">{t.backgroundColor}</label>
                   <input
                     id="bg-color"
                     type="color"
@@ -115,12 +137,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 </div>
 
                 <button className="btn btn-success" onClick={onApplyColor}>
-                  ✓ Apply Color
+                  {t.applyColor}
                 </button>
 
-                <button className="btn btn-primary" onClick={onDownload}>
-                  ⬇ Download PNG
-                </button>
+                {hasResult && (
+                  <button className="btn btn-primary" onClick={onDownload}>
+                    {t.downloadPNG}
+                  </button>
+                )}
               </>
             )}
           </>
@@ -130,7 +154,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       {hasImage && !hasClosedPath && (
         <div className="toolbar-hints">
           <p className="hint">
-            💡 <strong>Click</strong> to place anchors • Path snaps to edges • <strong>Click near first anchor</strong> to close
+            {t.hint} <strong>{t.hintClick}</strong> • {t.hintSnaps} • <strong>{t.hintClose}</strong>
           </p>
         </div>
       )}
