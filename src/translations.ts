@@ -26,6 +26,11 @@ export interface Translations {
   selectLanguage: string;
   undoTitle: string;
   resetTitle: string;
+  outputMode: string;
+  backgroundColorMode: string;
+  extractObjectMode: string;
+  applyColorHint: string;
+  extractObjectHint: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -55,6 +60,11 @@ export const translations: Record<Language, Translations> = {
     selectLanguage: 'Language',
     undoTitle: 'Undo last anchor (Ctrl/Cmd+Z)',
     resetTitle: 'Reset selection (Esc)',
+    outputMode: 'Output Mode',
+    backgroundColorMode: 'Background Color',
+    extractObjectMode: 'Extract Object Only',
+    applyColorHint: 'Replace background with solid color',
+    extractObjectHint: 'Remove background, keep object only',
   },
   fr: {
     appTitle: 'ChromaCut',
@@ -82,6 +92,11 @@ export const translations: Record<Language, Translations> = {
     selectLanguage: 'Langue',
     undoTitle: 'Annuler la dernière ancre (Ctrl/Cmd+Z)',
     resetTitle: 'Réinitialiser la sélection (Échap)',
+    outputMode: 'Mode de Sortie',
+    backgroundColorMode: 'Couleur d\'Arrière-plan',
+    extractObjectMode: 'Extraire l\'Objet Uniquement',
+    applyColorHint: 'Remplacer l\'arrière-plan par une couleur unie',
+    extractObjectHint: 'Supprimer l\'arrière-plan, garder uniquement l\'objet',
   },
   zh: {
     appTitle: 'ChromaCut',
@@ -109,5 +124,10 @@ export const translations: Record<Language, Translations> = {
     selectLanguage: '语言',
     undoTitle: '撤销上一个锚点 (Ctrl/Cmd+Z)',
     resetTitle: '重置选区 (Esc)',
+    outputMode: '输出模式',
+    backgroundColorMode: '背景颜色',
+    extractObjectMode: '仅提取对象',
+    applyColorHint: '用纯色替换背景',
+    extractObjectHint: '移除背景，仅保留对象',
   },
 };

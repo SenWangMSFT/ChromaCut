@@ -2,8 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { Editor } from './components/Editor';
 import { Toolbar } from './components/Toolbar';
 import { Toast } from './components/Toast';
-import { Point } from './types';
-import { generateMask, applyBackgroundColor, downloadCanvasAsPNG } from './lib/mask';
+import { Point, OutputMode } from './types';
+import { generateMask, applyBackgroundColor, extractObject, downloadCanvasAsPNG } from './lib/mask';
 import { isTIFF, decodeTIFF } from './lib/tiff';
 import { Language, translations } from './translations';
 import './App.css';
@@ -19,6 +19,7 @@ function App() {
   const [closedPath, setClosedPath] = useState<Point[] | null>(null);
   const [edgeStrength, setEdgeStrength] = useState(1.5);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [outputMode, setOutputMode] = useState<OutputMode>('extract-object');
   const [resetTrigger, setResetTrigger] = useState(0);
   const [resultCanvas, setResultCanvas] = useState<HTMLCanvasElement | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -135,16 +136,23 @@ function App() {
       // Generate mask from closed path
       const mask = generateMask(closedPath, image.width, image.height);
 
-      // Apply background color
-      const canvas = applyBackgroundColor(image, mask, backgroundColor);
+      let canvas: HTMLCanvasElement;
+      if (outputMode === 'background-color') {
+        // Apply background color
+        canvas = applyBackgroundColor(image, mask, backgroundColor);
+      } else {
+        // Extract object with transparent background
+        canvas = extractObject(image, mask);
+      }
+      
       setResultCanvas(canvas);
 
       showToast(t.colorAppliedSuccess, 'success');
     } catch (error) {
-      console.error('Error applying color:', error);
+      console.error('Error processing image:', error);
       showToast(t.applyColorError, 'error');
     }
-  }, [image, closedPath, backgroundColor, t]);
+  }, [image, closedPath, backgroundColor, outputMode, t]);
 
   const handleDownload = useCallback(() => {
     if (!resultCanvas) {
@@ -177,9 +185,11 @@ function App() {
                 hasResult={!!resultCanvas}
                 edgeStrength={edgeStrength}
                 backgroundColor={backgroundColor}
+                outputMode={outputMode}
                 onUploadImage={handleUploadImage}
                 onEdgeStrengthChange={setEdgeStrength}
                 onBackgroundColorChange={setBackgroundColor}
+                onOutputModeChange={setOutputMode}
                 onUndo={handleUndo}
                 onReset={handleReset}
                 onApplyColor={handleApplyColor}

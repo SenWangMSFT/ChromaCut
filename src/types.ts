@@ -32,3 +32,5 @@ export interface BoundingBox {
   maxX: number;
   maxY: number;
 }
+
+export type OutputMode = 'background-color' | 'extract-object';

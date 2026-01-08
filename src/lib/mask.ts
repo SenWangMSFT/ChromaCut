@@ -84,6 +84,39 @@ export function applyBackgroundColor(
 }
 
 /**
+ * Extract only the selected object with transparent background
+ * Background pixels become transparent, selected object keeps original pixels
+ */
+export function extractObject(
+  originalImage: HTMLImageElement,
+  mask: ImageData
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = originalImage.width;
+  canvas.height = originalImage.height;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Draw original image
+  ctx.drawImage(originalImage, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  // Make background transparent where mask is black (background)
+  // Keep original pixels where mask is white (selected object)
+  for (let i = 0; i < mask.data.length; i += 4) {
+    const maskValue = mask.data[i]; // R channel (0 = background, 255 = selected)
+    
+    if (maskValue < 128) {
+      // Background pixel - make transparent
+      imageData.data[i + 3] = 0; // Set alpha to 0 (fully transparent)
+    }
+    // else: selected object pixel - keep original with original alpha
+  }
+  
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+/**
  * Download canvas as PNG
  */
 export function downloadCanvasAsPNG(canvas: HTMLCanvasElement, filename: string = 'chromacut-result.png') {

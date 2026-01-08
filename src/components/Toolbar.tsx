@@ -1,5 +1,6 @@
 import React from 'react';
 import { Translations, Language } from '../translations';
+import { OutputMode } from '../types';
 
 interface ToolbarProps {
   hasImage: boolean;
@@ -7,9 +8,11 @@ interface ToolbarProps {
   hasResult: boolean;
   edgeStrength: number;
   backgroundColor: string;
+  outputMode: OutputMode;
   onUploadImage: (file: File) => void;
   onEdgeStrengthChange: (value: number) => void;
   onBackgroundColorChange: (color: string) => void;
+  onOutputModeChange: (mode: OutputMode) => void;
   onUndo: () => void;
   onReset: () => void;
   onApplyColor: () => void;
@@ -25,9 +28,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   hasResult,
   edgeStrength,
   backgroundColor,
+  outputMode,
   onUploadImage,
   onEdgeStrengthChange,
   onBackgroundColorChange,
+  onOutputModeChange,
   onUndo,
   onReset,
   onApplyColor,
@@ -126,18 +131,48 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 <div className="divider" />
                 
                 <div className="control-group">
-                  <label htmlFor="bg-color">{t.backgroundColor}</label>
-                  <input
-                    id="bg-color"
-                    type="color"
-                    value={backgroundColor}
-                    onChange={(e) => onBackgroundColorChange(e.target.value)}
-                    className="color-picker"
-                  />
+                  <label>{t.outputMode}</label>
+                  <div className="radio-group">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="outputMode"
+                        value="background-color"
+                        checked={outputMode === 'background-color'}
+                        onChange={(e) => onOutputModeChange(e.target.value as OutputMode)}
+                      />
+                      <span>{t.backgroundColorMode}</span>
+                      <small className="radio-hint">{t.applyColorHint}</small>
+                    </label>
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="outputMode"
+                        value="extract-object"
+                        checked={outputMode === 'extract-object'}
+                        onChange={(e) => onOutputModeChange(e.target.value as OutputMode)}
+                      />
+                      <span>{t.extractObjectMode}</span>
+                      <small className="radio-hint">{t.extractObjectHint}</small>
+                    </label>
+                  </div>
                 </div>
 
+                {outputMode === 'background-color' && (
+                  <div className="control-group">
+                    <label htmlFor="bg-color">{t.backgroundColor}</label>
+                    <input
+                      id="bg-color"
+                      type="color"
+                      value={backgroundColor}
+                      onChange={(e) => onBackgroundColorChange(e.target.value)}
+                      className="color-picker"
+                    />
+                  </div>
+                )}
+
                 <button className="btn btn-success" onClick={onApplyColor}>
-                  {t.applyColor}
+                  {outputMode === 'background-color' ? t.applyColor : t.extractObjectMode}
                 </button>
 
                 {hasResult && (
