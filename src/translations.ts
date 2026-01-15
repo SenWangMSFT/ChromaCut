@@ -31,6 +31,21 @@ export interface Translations {
   extractObjectMode: string;
   applyColorHint: string;
   extractObjectHint: string;
+  keyboardShortcuts: string;
+  keyboardShortcutsTitle: string;
+  shortcutUndo: string;
+  shortcutReset: string;
+  shortcutApply: string;
+  shortcutDownload: string;
+  shortcutZoomIn: string;
+  shortcutZoomOut: string;
+  shortcutZoomFit: string;
+  shortcutHelp: string;
+  shortcutUpload: string;
+  generalSection: string;
+  editingSection: string;
+  viewSection: string;
+  closeHelp: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -65,6 +80,21 @@ export const translations: Record<Language, Translations> = {
     extractObjectMode: 'Extract Object Only',
     applyColorHint: 'Replace background with solid color',
     extractObjectHint: 'Remove background, keep object only',
+    keyboardShortcuts: 'Keyboard Shortcuts',
+    keyboardShortcutsTitle: 'Keyboard Shortcuts',
+    shortcutUndo: 'Undo last anchor',
+    shortcutReset: 'Reset selection',
+    shortcutApply: 'Apply background color',
+    shortcutDownload: 'Download result',
+    shortcutZoomIn: 'Zoom in',
+    shortcutZoomOut: 'Zoom out',
+    shortcutZoomFit: 'Fit to screen',
+    shortcutHelp: 'Show keyboard shortcuts',
+    shortcutUpload: 'Upload new image',
+    generalSection: 'General',
+    editingSection: 'Editing',
+    viewSection: 'View',
+    closeHelp: 'Close',
   },
   fr: {
     appTitle: 'ChromaCut',
@@ -97,6 +127,21 @@ export const translations: Record<Language, Translations> = {
     extractObjectMode: 'Extraire l\'Objet Uniquement',
     applyColorHint: 'Remplacer l\'arrière-plan par une couleur unie',
     extractObjectHint: 'Supprimer l\'arrière-plan, garder uniquement l\'objet',
+    keyboardShortcuts: 'Raccourcis Clavier',
+    keyboardShortcutsTitle: 'Raccourcis Clavier',
+    shortcutUndo: 'Annuler la dernière ancre',
+    shortcutReset: 'Réinitialiser la sélection',
+    shortcutApply: 'Appliquer la couleur d\'arrière-plan',
+    shortcutDownload: 'Télécharger le résultat',
+    shortcutZoomIn: 'Zoom avant',
+    shortcutZoomOut: 'Zoom arrière',
+    shortcutZoomFit: 'Ajuster à l\'écran',
+    shortcutHelp: 'Afficher les raccourcis clavier',
+    shortcutUpload: 'Télécharger une nouvelle image',
+    generalSection: 'Général',
+    editingSection: 'Édition',
+    viewSection: 'Affichage',
+    closeHelp: 'Fermer',
   },
   zh: {
     appTitle: 'ChromaCut',
@@ -129,5 +174,20 @@ export const translations: Record<Language, Translations> = {
     extractObjectMode: '仅提取对象',
     applyColorHint: '用纯色替换背景',
     extractObjectHint: '移除背景，仅保留对象',
+    keyboardShortcuts: '键盘快捷键',
+    keyboardShortcutsTitle: '键盘快捷键',
+    shortcutUndo: '撤销上一个锚点',
+    shortcutReset: '重置选区',
+    shortcutApply: '应用背景颜色',
+    shortcutDownload: '下载结果',
+    shortcutZoomIn: '放大',
+    shortcutZoomOut: '缩小',
+    shortcutZoomFit: '适应屏幕',
+    shortcutHelp: '显示键盘快捷键',
+    shortcutUpload: '上传新图片',
+    generalSection: '通用',
+    editingSection: '编辑',
+    viewSection: '视图',
+    closeHelp: '关闭',
   },
 };

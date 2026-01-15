@@ -56,6 +56,8 @@ export const Editor: React.FC<EditorProps> = ({
   const lastMouseMoveTime = useRef(0);
   const isPanning = useRef(false);
   const lastPanPosition = useRef({ x: 0, y: 0 });
+  const initialScale = useRef(1);
+  const initialPosition = useRef({ x: 0, y: 0 });
 
   // Handle window resize
   useEffect(() => {
@@ -124,10 +126,15 @@ export const Editor: React.FC<EditorProps> = ({
     const newScale = Math.min(scaleX, scaleY, 1);
     
     setScale(newScale);
-    setPosition({
+    const newPosition = {
       x: (dimensions.width - image.width * newScale) / 2,
       y: (dimensions.height - image.height * newScale) / 2,
-    });
+    };
+    setPosition(newPosition);
+    
+    // Store initial values for fit-to-screen reset
+    initialScale.current = newScale;
+    initialPosition.current = newPosition;
   }, [image, dimensions.width, dimensions.height]);
 
   // Update cost map when edge strength changes
@@ -272,6 +279,47 @@ export const Editor: React.FC<EditorProps> = ({
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Zoom shortcuts
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+        e.preventDefault();
+        const center = { x: dimensions.width / 2, y: dimensions.height / 2 };
+        const mousePointTo = {
+          x: (center.x - position.x) / scale,
+          y: (center.y - position.y) / scale,
+        };
+        const newScale = Math.min(5, scale * 1.2);
+        setScale(newScale);
+        setPosition({
+          x: center.x - mousePointTo.x * newScale,
+          y: center.y - mousePointTo.y * newScale,
+        });
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_')) {
+        e.preventDefault();
+        const center = { x: dimensions.width / 2, y: dimensions.height / 2 };
+        const mousePointTo = {
+          x: (center.x - position.x) / scale,
+          y: (center.y - position.y) / scale,
+        };
+        const newScale = Math.max(0.1, scale / 1.2);
+        setScale(newScale);
+        setPosition({
+          x: center.x - mousePointTo.x * newScale,
+          y: center.y - mousePointTo.y * newScale,
+        });
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault();
+        setScale(initialScale.current);
+        setPosition(initialPosition.current);
+        return;
+      }
+
+      // Editing shortcuts (only when not path closed)
       if (isPathClosed) return;
       
       // Undo: Ctrl/Cmd + Z
@@ -319,7 +367,7 @@ export const Editor: React.FC<EditorProps> = ({
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [anchors, costMap, imageData, isPathClosed, onReset]);
+  }, [anchors, costMap, imageData, isPathClosed, onReset, scale, position, dimensions]);
 
   // Handle wheel zoom
   const handleWheel = useCallback((e: any) => {

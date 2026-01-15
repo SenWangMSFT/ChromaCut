@@ -42,6 +42,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onLanguageChange,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const modKey = isMac ? '⌘' : 'Ctrl';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,7 +86,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         />
         
         <button className="btn btn-primary" onClick={handleUploadClick}>
-          {t.uploadImage}
+          {t.uploadImage} <span className="btn-shortcut">({modKey}+O)</span>
         </button>
 
         {hasImage && (
@@ -96,7 +98,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               onClick={onUndo}
               title={t.undoTitle}
             >
-              {t.undo}
+              {t.undo} <span className="btn-shortcut">({modKey}+Z)</span>
             </button>
             
             <button
@@ -104,7 +106,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               onClick={onReset}
               title={t.resetTitle}
             >
-              {t.reset}
+              {t.reset} <span className="btn-shortcut">(Esc)</span>
             </button>
 
             <div className="divider" />
@@ -172,12 +174,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 )}
 
                 <button className="btn btn-success" onClick={onApplyColor}>
-                  {outputMode === 'background-color' ? t.applyColor : t.extractObjectMode}
+                  {outputMode === 'background-color' ? t.applyColor : t.extractObjectMode} <span className="btn-shortcut">(Enter)</span>
                 </button>
 
                 {hasResult && (
                   <button className="btn btn-primary" onClick={onDownload}>
-                    {t.downloadPNG}
+                    {t.downloadPNG} <span className="btn-shortcut">({modKey}+S)</span>
                   </button>
                 )}
               </>

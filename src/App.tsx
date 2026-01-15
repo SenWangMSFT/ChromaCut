@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Editor } from './components/Editor';
 import { Toolbar } from './components/Toolbar';
 import { Toast } from './components/Toast';
+import { KeyboardShortcuts } from './components/KeyboardShortcuts';
 import { Point, OutputMode } from './types';
 import { generateMask, applyBackgroundColor, extractObject, downloadCanvasAsPNG } from './lib/mask';
 import { isTIFF, decodeTIFF } from './lib/tiff';
@@ -26,6 +27,8 @@ function App() {
   const [leftPanelWidth, setLeftPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const t = translations[language];
 
@@ -164,6 +167,68 @@ function App() {
     showToast(t.downloadSuccess, 'success');
   }, [resultCanvas, t]);
 
+  const handleUploadClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.match(/^image\/(png|jpeg|jpg|tiff|tif)$/)) {
+      handleUploadImage(file);
+      e.target.value = '';
+    } else if (file) {
+      showToast(t.invalidFileType, 'error');
+    }
+  }, [handleUploadImage, t]);
+
+  // Global keyboard shortcuts
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Show keyboard shortcuts: ? or /
+      if ((e.key === '?' || e.key === '/') && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        setShowShortcuts(true);
+        return;
+      }
+
+      // Close shortcuts panel: Escape
+      if (e.key === 'Escape' && showShortcuts) {
+        e.preventDefault();
+        setShowShortcuts(false);
+        return;
+      }
+
+      // Upload image: Ctrl/Cmd+O
+      if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+        e.preventDefault();
+        handleUploadClick();
+        return;
+      }
+
+      // Apply color: Enter (only if path is closed and no result yet)
+      if (e.key === 'Enter' && closedPath && !resultCanvas) {
+        e.preventDefault();
+        handleApplyColor();
+        return;
+      }
+
+      // Download: Ctrl/Cmd+S (only if result exists)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's' && resultCanvas) {
+        e.preventDefault();
+        handleDownload();
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showShortcuts, closedPath, resultCanvas, handleUploadClick, handleApplyColor, handleDownload]);
+
   // Cleanup on unmount
   React.useEffect(() => {
     return () => {
@@ -175,6 +240,14 @@ function App() {
 
   return (
     <div className="app">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/tiff,image/tif"
+        onChange={handleFileInputChange}
+        style={{ display: 'none' }}
+      />
+
       <div className="app-container">
         {image && (
           <>
@@ -232,6 +305,22 @@ function App() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {showShortcuts && (
+        <KeyboardShortcuts
+          translations={t}
+          onClose={() => setShowShortcuts(false)}
+        />
+      )}
+
+      <button
+        className="help-button"
+        onClick={() => setShowShortcuts(true)}
+        title={t.keyboardShortcuts}
+        aria-label={t.keyboardShortcuts}
+      >
+        ?
+      </button>
     </div>
   );
 }
